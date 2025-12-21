@@ -208,3 +208,7 @@ __marimo__/
 
 # macOS staff
 .DS_Store
+
+# data
+data/
+frame/
