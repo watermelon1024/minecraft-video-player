@@ -202,8 +202,10 @@ def process_frames_from_video(
     # 1. read metadata via cv2 (as required)
     meta = get_metadata_cv2(video_path)
     src_w, src_h, src_fps = meta["width"], meta["height"], meta["fps"]
+    frame_count = meta["frame_count"]
+    duration = meta["duration"]
     print(
-        f"[metadata] source size={src_w}x{src_h}, fps={src_fps}, frames={meta['frame_count']}, duration={meta['duration']}s"
+        f"[metadata] source size={src_w}x{src_h}, fps={src_fps}, frames={frame_count or 'unknown'}, duration={f'{duration}s' if duration else 'unknown'}"
     )
 
     # resolve target size
@@ -211,6 +213,13 @@ def process_frames_from_video(
         target_size = (src_w, src_h)
     else:
         target_size = output_size
+
+    target_frame_count = None
+    if duration is not None:
+        target_frame_count = int(math.floor(duration * output_fps + 1e-6))
+    print(
+        f"[processing] target size={target_size[0]}x{target_size[1]}, fps={output_fps}, frames={target_frame_count or 'unknown'}"
+    )
 
     # decide ffmpeg usability
     ffmpeg_available = False
