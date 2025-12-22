@@ -110,7 +110,7 @@ def finish_callback(meta: VideoMetadata):
     total_height_blocks = target_h * PIXEL_SCALE
     start_y = total_height_blocks
 
-    cmd_list: list[str] = []
+    init_cmds: list[str] = []
 
     # 只需要對每一「行」(Row) 生成一個實體
     for r in range(rows):
@@ -136,18 +136,29 @@ def finish_callback(meta: VideoMetadata):
             )
             + "],line_width:2147483647,background:0}"
         )
-        cmd_list.append(cmd)
+        init_cmds.append(cmd)
 
     # --- 3. 生成幀 Unicode 對應表 ---
     frames_unicode = ",".join(f'"\\u{start_char + i:04x}"' for i in range(total_frames))
-    cmd_list.insert(0, "data merge storage video_player:frame {frames:[%s]}" % frames_unicode)
+    init_cmds.insert(0, "data merge storage video_player:frame {frames:[%s]}" % frames_unicode)
 
-    cmd_list.append("scoreboard players set frame video_player 0")
-    cmd_list.append(f"scoreboard players set end_frame video_player {total_frames - 1}")
+    init_cmds.append("scoreboard players set frame video_player 0")
+    init_cmds.append(f"scoreboard players set end_frame video_player {total_frames - 1}")
 
     mcfunction_dir = "dtp/function"
     os.makedirs(mcfunction_dir, exist_ok=True)
+
     init_path = os.path.join(mcfunction_dir, "init.mcfunction")
     with open(init_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(cmd_list))
+        f.write("\n".join(init_cmds))
     print(f"[Done] 已生成初始化指令: {init_path}")
+
+    play_loop_path = os.path.join(mcfunction_dir, "play_frame.mcfunction")
+    with open(play_loop_path, "w", encoding="utf-8") as f:
+        f.write(
+            "\n".join(
+                f"$data modify entity @s text.extra[{c * 2}].text set from storage video_player:frame frames[$(frame)]"
+                for c in range(cols)
+            )
+        )
+    print(f"[Done] 已生成播放幀指令: {play_loop_path}")
