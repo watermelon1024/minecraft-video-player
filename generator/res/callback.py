@@ -15,75 +15,75 @@ ROW_HEIGHT_BLOCKS = MAX_H * PIXEL_SCALE  # 6.4
 
 def processing_callback(frame: FrameData, index: FrameIndex, timestamp: TimestampSec):
     """
-    將單一畫面切割成多個 < 256x256 的小圖塊並存檔。
-    檔名格式: assets/minecraft/textures/font/f{index}_r{row}_c{col}.png
+    Splits a single frame into multiple small tiles < 256x256 and saves them.
+    Filename format: assets/minecraft/textures/font/f{index}_r{row}_c{col}.png
     """
 
-    # 取得原始尺寸
+    # Get original dimensions
     h, w, _ = frame.shape
 
-    # 計算需要切幾行幾列 (Ceiling division)
+    # Calculate rows and columns needed (Ceiling division)
     cols = math.ceil(w / MAX_W)
     rows = math.ceil(h / MAX_H)
 
-    # 確保輸出目錄存在
+    # Ensure output directory exists
     output_dir = "frame"
     os.makedirs(output_dir, exist_ok=True)
 
-    # --- 開始切割與存檔 ---
+    # --- Start slicing and saving ---
     for r in range(rows):
         for c in range(cols):
-            # 計算裁切範圍
+            # Calculate crop range
             x_start = c * MAX_W
             y_start = r * MAX_H
             x_end = min(x_start + MAX_W, w)
             y_end = min(y_start + MAX_H, h)
 
-            # [核心] 利用 NumPy Slicing 切割 (速度極快)
+            # [Core] Slice using NumPy (very fast)
             # frame[y:y, x:x]
             tile = frame[y_start:y_end, x_start:x_end]
 
-            # 存檔
-            # 檔名範例: f0_r0_c0.png
+            # Save file
+            # Filename example: f0_r0_c0.png
             filepath = os.path.join(output_dir, f"f{index}_r{r}_c{c}.png")
 
-            # 使用 cv2 存檔 (預設壓縮參數即可)
+            # Save using cv2 (default compression is fine)
             cv2.imwrite(filepath, tile)
 
 
 def finish_callback(meta: VideoMetadata):
     """
-    根據影片總幀數和尺寸，生成 custom font json 與 text_display init mcfunction。
-    利用 1 px = 0.025 blocks 的測量數據進行自動對齊。
+    Generates custom font json and text_display init mcfunction based on total frames and dimensions.
+    Uses 1 px = 0.025 blocks measurement for automatic alignment.
     """
 
     target_w = meta["width"]
     target_h = meta["height"]
     fps = meta["fps"]
     total_frames = meta["frame_count"]
-    # 計算行列數
+    # Calculate rows and columns
     cols = math.ceil(target_w / MAX_W)
     rows = math.ceil(target_h / MAX_H)
 
-    # --- 1. 生成 custom font json ---
+    # --- 1. Generate custom font json ---
     fonts: dict[str, list] = {}
     start_char = 0xE000
 
-    print(f"[Info] 正在生成設定檔... (Grid: {rows} rows x {cols} cols)")
+    print(f"[Info] Generating config... (Grid: {rows} rows x {cols} cols)")
 
     for i in range(total_frames):
         for r in range(rows):
             current_h = min((r + 1) * MAX_H, target_h) - (r * MAX_H)
             for c in range(cols):
-                # Ascent 設為 0
-                # 這代表基準線(Baseline)在圖片的最頂端。
-                # 圖片會從實體的 Y 座標開始，向下渲染 current_h 的長度。
+                # Set Ascent to 0
+                # This means the baseline is at the top of the image.
+                # The image will render downwards from the entity's Y coordinate for current_h length.
                 fonts.setdefault(f"frame_r{r}_c{c}", []).append(
                     {
                         "type": "bitmap",
                         "file": f"video:frame/f{i}_r{r}_c{c}.png",
-                        "ascent": 0,  # 頂部對齊
-                        "height": current_h,  # 實際像素高度
+                        "ascent": 0,  # Top aligned
+                        "height": current_h,  # Actual pixel height
                         "chars": [chr(start_char + i)],
                     }
                 )
@@ -95,34 +95,34 @@ def finish_callback(meta: VideoMetadata):
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump({"providers": providers}, f, separators=(",", ":"), ensure_ascii=False)
 
-    print(f"[Done] 已生成資源包設定: {font_dir}")
+    print(f"[Done] Generated resource pack config: {font_dir}")
 
-    # --- 2. 輸出召喚指令 (Row-based) ---
-    print("[Info] 生成召喚指令...")
-    # 計算總寬度（用於置中）
-    total_width_blocks = target_w * PIXEL_SCALE
+    # --- 2. Output summon commands (Row-based) ---
+    print("[Info] Generating summon commands...")
+    # # Calculate total width (for centering)
+    # total_width_blocks = target_w * PIXEL_SCALE
 
-    # 起始 X：往左移總寬的一半
-    trans_x = -(total_width_blocks / 2)
+    # # Start X: Shift left by half of total width
+    # trans_x = -(total_width_blocks / 2)
 
-    # 起始 Y：因為 ascent=0 代表圖片向下長，所以我們把第一排放在最高點
-    # 假設腳下是 0，螢幕底部對齊眼睛高度(1.6)，或是直接浮空
-    # 這裡設為：第一排的頂端在 Y + 總高度 (這樣螢幕底部大約在 Y=0)
+    # Start Y: Since ascent=0 means image grows downwards, place the first row at the highest point.
+    # Assuming feet at 0, screen bottom aligned with eye height (1.6), or floating.
+    # Here set as: Top of first row at Y + total height (so screen bottom is approx at Y=0).
     total_height_blocks = target_h * PIXEL_SCALE
     start_y = total_height_blocks
 
     init_cmds: list[str] = []
 
-    # 只需要對每一「行」(Row) 生成一個實體
+    # Generate one entity per row
     for r in range(rows):
-        # 1. 計算該行的 Y 座標
-        # 因為每一行完整的高度都是 256px (除了最後一行，但最後一行起始點也是從上一行結束算起)
-        # 且 ascent=0，所以下一行的起始點就是 Current_Y - 6.4
+        # 1. Calculate Y coordinate for this row
+        # Since each row is fully 256px high (except the last one, but its start is relative to previous end)
+        # And ascent=0, so next row start is Current_Y - 6.4
         trans_y = start_y - (r * ROW_HEIGHT_BLOCKS)
 
-        # 3. 生成該行的初始化文字 (只用來佔位，實際播放時會替換)
-        # 這裡我們不需要預先知道 Unicode，因為那是播放邏輯的事
-        # 但為了測試，我們可以塞入第一幀的對應字符
+        # 3. Generate initialization text for this row (placeholder, replaced during playback)
+        # We don't need to know Unicode here, as that's playback logic.
+        # But for testing, we can insert the character for the first frame.
         cmd = (
             "summon minecraft:text_display ~ ~ ~ "
             '{Tags:["video_player","frame"],'
@@ -139,7 +139,7 @@ def finish_callback(meta: VideoMetadata):
         )
         init_cmds.append(cmd)
 
-    # --- 3. 生成幀 Unicode 對應表 ---
+    # --- 3. Generate frame Unicode mapping table ---
     frames_unicode = ",".join(f'"\\u{start_char + i:04x}"' for i in range(total_frames))
     init_cmds.insert(0, "data merge storage video_player:frame {frames:[%s]}" % frames_unicode)
 
@@ -156,7 +156,7 @@ def finish_callback(meta: VideoMetadata):
     init_path = os.path.join(mcfunction_dir, "init.mcfunction")
     with open(init_path, "w", encoding="utf-8") as f:
         f.write("\n".join(init_cmds))
-    print(f"[Done] 已生成初始化指令: {init_path}")
+    print(f"[Done] Generated init commands: {init_path}")
 
     play_loop_path = os.path.join(mcfunction_dir, "play_frame.mcfunction")
     with open(play_loop_path, "w", encoding="utf-8") as f:
@@ -166,7 +166,7 @@ def finish_callback(meta: VideoMetadata):
                 for c in range(cols)
             )
         )
-    print(f"[Done] 已生成播放幀指令: {play_loop_path}")
+    print(f"[Done] Generated play frame commands: {play_loop_path}")
 
     # -- Sounds JSON generation is moved to sound.py ---
     sounds_dir = os.path.join("res", "sounds")
