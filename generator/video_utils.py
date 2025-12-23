@@ -30,6 +30,7 @@ import numpy as np
 
 
 class VideoMetadata(TypedDict):
+    path: str
     width: int
     height: int
     fps: float
@@ -60,7 +61,14 @@ def get_metadata_cv2(path: str) -> VideoMetadata:
     if fps > 0 and frame_count > 0:
         duration = frame_count / fps
     cap.release()
-    return {"width": width, "height": height, "fps": fps, "frame_count": frame_count, "duration": duration}
+    return {
+        "path": path,
+        "width": width,
+        "height": height,
+        "fps": fps,
+        "frame_count": frame_count,
+        "duration": duration,
+    }
 
 
 def find_ffmpeg() -> Optional[str]:
@@ -284,6 +292,7 @@ def process_frames_from_video(
 
     if finish_callback:
         meta["frame_count"] = frame_count
+        meta["duration"] = frame_count / output_fps
         finish_callback(meta)
 
 

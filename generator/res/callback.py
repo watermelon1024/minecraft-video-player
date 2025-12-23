@@ -4,8 +4,8 @@ import os
 
 import cv2
 
-
-from ..video_utils import VideoMetadata, FrameData, FrameIndex, TimestampSec
+from ..video_utils import FrameData, FrameIndex, TimestampSec, VideoMetadata
+from .audio import generate_segmented_sounds_json, segment_audio
 
 MAX_W = 256
 MAX_H = 256
@@ -59,6 +59,7 @@ def finish_callback(meta: VideoMetadata):
 
     target_w = meta["width"]
     target_h = meta["height"]
+    fps = meta["fps"]
     total_frames = meta["frame_count"]
     # 計算行列數
     cols = math.ceil(target_w / MAX_W)
@@ -145,6 +146,10 @@ def finish_callback(meta: VideoMetadata):
     init_cmds.append("scoreboard players set frame video_player 0")
     init_cmds.append(f"scoreboard players set end_frame video_player {total_frames - 1}")
 
+    # audio segment time (seconds)
+    segment_time = 10  # seconds
+    init_cmds.append(f"scoreboard players set audio_segment video_player {int(segment_time * fps)}")
+
     mcfunction_dir = "dtp/function"
     os.makedirs(mcfunction_dir, exist_ok=True)
 
@@ -162,3 +167,8 @@ def finish_callback(meta: VideoMetadata):
             )
         )
     print(f"[Done] 已生成播放幀指令: {play_loop_path}")
+
+    # -- Sounds JSON generation is moved to sound.py ---
+    sounds_dir = os.path.join("res", "sounds")
+    audio_files = segment_audio(meta["path"], sounds_dir, segment_time=segment_time)
+    generate_segmented_sounds_json(audio_files, namespace="video")
