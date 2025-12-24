@@ -1,0 +1,9 @@
+{
+  "pack": {
+    "description": "Minecraft Video Player",
+    "pack_format": 75,
+    "supported_formats": [13, 64],
+    "min_format": 13,
+    "max_format": [75, 0]
+  }
+}

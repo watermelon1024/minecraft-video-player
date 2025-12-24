@@ -107,7 +107,7 @@ def finish_callback(meta: VideoMetadata, datapack: PackGenerator, resourcepack: 
             "scale:[1f,1f,1f]},"
             'text:["",'
             + ',{"text":"\\u200c","font":"video:nosplit"},'.join(
-                '{"text":"\\uE000","font":"video:frame_r%d_c%d"}' % (r, c) for c in range(cols)
+                '{"text":"\\uE000","font":"video:frame_%d_%d"}' % (r, c) for c in range(cols)
             )
             + "],line_width:2147483647,background:0}"
         )

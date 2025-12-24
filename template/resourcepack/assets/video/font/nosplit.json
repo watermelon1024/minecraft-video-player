@@ -1,0 +1,11 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "video:space_nosplit.png",
+      "ascent": -9999,
+      "height": -4,
+      "chars": ["\u200C"]
+    }
+  ]
+}
