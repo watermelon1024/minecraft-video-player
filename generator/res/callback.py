@@ -124,6 +124,12 @@ def finish_callback(meta: VideoMetadata, datapack: PackGenerator, resourcepack: 
     segment_time = 10
     init_cmds.append(f"scoreboard players set audio_segment video_player {int(segment_time * fps)}")
 
+    if fps != 20:
+        init_cmds.append(
+            'tellraw @p ["","Your target FPS is not 20; you need to execute ",{text:"/tick rate %d",bold:true,color:"gold",click_event:{action:"suggest_command",command:"/tick rate %d"}}," to fit the correct playback speed. (Or ",{text:"[Click Here]",color:"gold",click_event:{action:"run_command",command:"tick rate %d"}}," to execute.)"]'
+            % (fps, fps, fps)
+        )
+
     mcfunction_dir = "data/video_player/function"
 
     init_path = os.path.join(mcfunction_dir, "init.mcfunction")
