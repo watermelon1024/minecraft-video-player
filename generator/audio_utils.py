@@ -1,7 +1,9 @@
 import os
 import subprocess
 from functools import partial
-from typing import Optional
+from typing import Optional, cast
+
+import av
 
 from generator.ffmpeg_utils import find_ffmpeg, verify_ffmpeg
 
@@ -35,11 +37,74 @@ def segment_audio_with_ffmpeg(
     return files
 
 
-def segment_audio_fallback(video_path: str, output_dir: str, segment_time: int = 10):
+def segment_audio_with_pyav(video_path: str, output_dir: str, segment_time: int = 10) -> list[str]:
     """
-    Split audio into Ogg segments without using ffmpeg (Fallback mode).
+    Split audio into Ogg segments using PyAV.
     """
-    raise NotImplementedError("Fallback audio segmentation is not implemented yet.")
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    try:
+        input_container = av.open(video_path)
+        if not input_container.streams.audio:
+            return []
+        in_stream = input_container.streams.audio[0]
+
+        sample_rate = 44100
+        samples_per_segment = int(sample_rate * segment_time)
+
+        current_segment_idx = 0
+        current_samples_written = 0
+
+        def open_next_segment(idx: int):
+            path = os.path.join(output_dir, f"part_{idx}.ogg")
+            container = av.open(path, "w")
+            stream = cast(av.AudioStream, container.add_stream("libvorbis", rate=sample_rate))
+            stream.layout = "stereo"
+            return container, stream
+
+        out_container, out_stream = open_next_segment(current_segment_idx)
+
+        resampler = av.AudioResampler(
+            format=out_stream.format,
+            layout=out_stream.layout,
+            rate=out_stream.rate,
+        )
+
+        for frame in input_container.decode(in_stream):
+            out_frames = resampler.resample(frame)
+
+            for out_frame in out_frames:
+                # Simple segmentation: switch file when sample count exceeds limit.
+                # Minor duration drift is acceptable for Minecraft.
+                packets = out_stream.encode(out_frame)
+                out_container.mux(packets)
+
+                current_samples_written += out_frame.samples
+
+                if current_samples_written >= samples_per_segment:
+                    # Flush current container
+                    packets = out_stream.encode(None)
+                    out_container.mux(packets)
+                    out_container.close()
+
+                    # Start new segment
+                    current_segment_idx += 1
+                    current_samples_written = 0
+                    out_container, out_stream = open_next_segment(current_segment_idx)
+
+        # Finalize
+        packets = out_stream.encode(None)
+        out_container.mux(packets)
+        out_container.close()
+        input_container.close()
+
+        print(f"[Audio-Fallback] Segmentation complete, {current_segment_idx + 1} parts.")
+        return [os.path.join(output_dir, f"part_{i}.ogg") for i in range(current_segment_idx + 1)]
+
+    except Exception as e:
+        print(f"[Audio-Fallback] Segmentation failed: {e}")
+        return []
 
 
 def segment_audio(
@@ -71,7 +136,7 @@ def segment_audio(
         via = "ffmpeg"
     else:
         print("[Audio] ffmpeg not available, using fallback method.")
-        _segment_audio = partial(segment_audio_fallback, input_video, output_dir, segment_time)
+        _segment_audio = partial(segment_audio_with_pyav, input_video, output_dir, segment_time)
         via = "fallback"
 
     files = _segment_audio()
