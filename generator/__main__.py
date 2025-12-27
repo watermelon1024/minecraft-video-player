@@ -16,7 +16,7 @@ from .video_utils import process_frames_from_video
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Minecraft Video Player Generator")
-    parser.add_argument("video-file", help="Path to the video file")
+    parser.add_argument("video", help="Path to the video file")
 
     # Output filename option
     parser.add_argument(
@@ -75,7 +75,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    video_file = args.video_file
+    video_file = args.video
     subtitle_file = args.subtitle
     no_subtitle = args.no_subtitle
     use_zip = not args.no_zip
