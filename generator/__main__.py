@@ -10,6 +10,7 @@ from .file_utils import PackGenerator, PackMode
 from .res.audio import generate_segmented_sounds_json
 from .res.callback import generate_frame_related, processing_callback
 from .res.subtitle import generate_subtitle_init_mcfunction
+from .subtitle_utils import extract_and_parse_subtitles_from_video, load_subtitles_from_file
 from .video_utils import process_frames_from_video
 
 if __name__ == "__main__":
@@ -20,6 +21,13 @@ if __name__ == "__main__":
     zip_group = parser.add_mutually_exclusive_group(required=False)
     zip_group.add_argument(
         "-z", "--zip", dest="zip", action="store_true", help="Generate as zip files (default)"
+    # Subtitle options
+    parser.add_argument("-s", "--subtitle", help="Path to the subtitle file (.srt, .ass, etc.)")
+    parser.add_argument(
+        "-ns",
+        "--no-subtitle",
+        action="store_true",
+        help="Do not attempt to extract subtitles from video (Do not affect if subtitle file is provided)",
     )
     zip_group.add_argument(
         "--no-zip", dest="zip", action="store_false", help="Generate as folders instead of zip files"
@@ -40,6 +48,8 @@ if __name__ == "__main__":
 
     video_file = args.video_file
     is_zip = args.zip
+    subtitle_file = args.subtitle
+    no_subtitle = args.no_subtitle
     no_resourcepack = args.no_resourcepack
     output_base = args.output
 
@@ -93,11 +103,19 @@ if __name__ == "__main__":
         )
 
         # handle subtitle
-        subtitle_path = "subtitle.srt"
-        if os.path.exists(subtitle_path):
-            init_cmds.append(generate_subtitle_init_mcfunction(subtitle_path, fps, datapack))
+        subs = None
+        if subtitle_file:
+            subs = load_subtitles_from_file(subtitle_file)
+
+        if subs is None and not no_subtitle:
+            subs = extract_and_parse_subtitles_from_video(video_file, prefer_ffmpeg=bool(ffmpeg_exec))
+
+        if subs:
+            init_cmds.append(generate_subtitle_init_mcfunction(subs, fps))
+            print(f"[Done] Generated subtitles with {len(subs)} entries.")
         else:
             init_cmds.append("data merge storage video_player:subtitle {}")  # empty subtitles
+            print("[Info] No subtitles found, skipping subtitle generation.")
 
         # save mcfunctions
         mcfunction_dir = "data/video_player/function"

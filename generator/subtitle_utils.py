@@ -169,7 +169,7 @@ def extract_subtitle_with_pyav(video_path: str, track_index: int):
 # ---------------------------
 # Orchestrator Function
 # ---------------------------
-def extract_and_parse_subtitles(
+def extract_and_parse_subtitles_from_video(
     video_path: str,
     prefer_ffmpeg: bool = True,
     ffmpeg_exec: Optional[str] = None,
@@ -211,7 +211,7 @@ def extract_and_parse_subtitles(
     # --- Step B: Select and extract ---
     print(f"[Subtitle] Detected {len(tracks_info)} subtitle tracks.")
     for i, t in enumerate(tracks_info, start=1):
-        print(f"[{i}] {t['language']} - {t['title']} (Source: {t['source']})")
+        print(f"\t[{i}] {t['language']} - {t['title']} (Source: {t['source']})")
 
     if len(tracks_info) > 1:
         target_index_str = input(f"Select subtitle track (1-{len(tracks_info)}, default 1): ").strip()
@@ -243,3 +243,12 @@ def extract_and_parse_subtitles(
 
     print(f"[Subtitle] Successfully extracted and parsed {len(subs)} entries.")
     return subs
+
+
+def load_subtitles_from_file(path: str):
+    print(f"[Subtitle] Loading subtitle from file: {path}")
+    try:
+        return pysubs2.load(path)
+    except Exception as e:
+        print(f"[Subtitle] Failed to load subtitle file: {e}")
+        return None
