@@ -264,13 +264,12 @@ def process_frames_from_video(
     meta["height"] = target_size[1]
     meta["fps"] = target_fps
 
-    ffmpeg_available = False
+    ffmpeg_available = False  # if user don't prefer ffmpeg, skip checking and assume False
     if prefer_ffmpeg:
         if not ffmpeg_exec_path:
             ffmpeg_exec_path = find_ffmpeg()
         if ffmpeg_exec_path:
             ffmpeg_available = verify_ffmpeg(ffmpeg_exec_path)
-            ffmpeg_available = True
 
     if ffmpeg_exec_path and ffmpeg_available:
         print(f"[ffmpeg] using ffmpeg at: {ffmpeg_exec_path}")
