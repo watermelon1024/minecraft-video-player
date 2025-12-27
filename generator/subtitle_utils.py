@@ -211,16 +211,17 @@ def extract_and_parse_subtitles_from_video(
     # --- Step B: Select and extract ---
     print(f"[Subtitle] Detected {len(tracks_info)} subtitle tracks.")
     for i, t in enumerate(tracks_info, start=1):
-        print(f"\t[{i}] {t['language']} - {t['title']} (Source: {t['source']})")
+        print(f"[Subtitle] [{i}] {t['language']} - {t['title']} (Source: {t['source']})")
 
     if len(tracks_info) > 1:
-        target_index_str = input(f"Select subtitle track (1-{len(tracks_info)}, default 1): ").strip()
+        target_track = input(f"Select subtitle track (1-{len(tracks_info)}, default 1): ").strip()
         try:
-            target_index = int(target_index_str) - 1
+            target_index = int(target_track) - 1
             if target_index < 0 or target_index >= len(tracks_info):
                 print("Invalid selection, defaulting to 1.")
                 target_index = 0
         except Exception:
+            print("Invalid input, defaulting to 1.")
             target_index = 0
     else:
         target_index = 0
