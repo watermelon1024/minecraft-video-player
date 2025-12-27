@@ -6,6 +6,7 @@ from tempfile import TemporaryDirectory
 
 from .audio_utils import segment_audio
 from .cli_utils import ask_metadata
+from .ffmpeg_utils import verify_ffmpeg
 from .file_utils import PackGenerator, PackMode
 from .res.audio import generate_segmented_sounds_json
 from .res.callback import generate_frame_related, processing_callback
@@ -15,27 +16,7 @@ from .video_utils import process_frames_from_video
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Minecraft Video Player Generator")
-    parser.add_argument("video_file", help="Path to the video file")
-
-    # Zip options (default: True)
-    zip_group = parser.add_mutually_exclusive_group(required=False)
-    zip_group.add_argument(
-        "-z", "--zip", dest="zip", action="store_true", help="Generate as zip files (default)"
-    # Subtitle options
-    parser.add_argument("-s", "--subtitle", help="Path to the subtitle file (.srt, .ass, etc.)")
-    parser.add_argument(
-        "-ns",
-        "--no-subtitle",
-        action="store_true",
-        help="Do not attempt to extract subtitles from video (Do not affect if subtitle file is provided)",
-    )
-    zip_group.add_argument(
-        "--no-zip", dest="zip", action="store_false", help="Generate as folders instead of zip files"
-    )
-    parser.set_defaults(zip=True)
-
-    # Resource pack options
-    parser.add_argument("-nr", "--no-resourcepack", action="store_true", help="Do not generate resource pack")
+    parser.add_argument("video-file", help="Path to the video file")
 
     # Output filename option
     parser.add_argument(
@@ -44,28 +25,94 @@ if __name__ == "__main__":
         help="Base name for output files (e.g. 'myvideo' -> 'myvideo_datapack', 'myvideo_resourcepack')",
     )
 
+    # Subtitle options
+    parser.add_argument(
+        "-s",
+        "--subtitle",
+        help="Path to the subtitle file (.srt, .ass, etc.)",
+    )
+    parser.add_argument(
+        "-ns",
+        "--no-subtitle",
+        action="store_true",
+        help="Do not attempt to extract subtitles from video (Do not affect if subtitle file is provided)",
+    )
+
+    # Zip options
+    parser.add_argument(
+        "-nz",
+        "--no-zip",
+        action="store_true",
+        help="Generate as folders instead of zip files",
+    )
+
+    # Resourcepack options
+    parser.add_argument(
+        "-nr",
+        "--no-resourcepack",
+        action="store_true",
+        help="Do not generate resource pack",
+    )
+
+    # Workers option
+    parser.add_argument(
+        "-w",
+        "--workers",
+        type=int,
+        default=16,
+        help="Number of worker threads to use for processing",
+    )
+
+    # FFmpeg options
+    parser.add_argument(
+        "--ffmpeg-exec",
+        help="Path to FFmpeg executable (if not in PATH)",
+    )
+    parser.add_argument(
+        "--ffprobe-exec",
+        help="Path to FFprobe executable (if not in PATH)",
+    )
+
     args = parser.parse_args()
 
     video_file = args.video_file
-    is_zip = args.zip
     subtitle_file = args.subtitle
     no_subtitle = args.no_subtitle
+    use_zip = not args.no_zip
     no_resourcepack = args.no_resourcepack
     output_base = args.output
+    workers = args.workers
+    ffmpeg_exec = args.ffmpeg_exec
+    ffprobe_exec = args.ffprobe_exec
 
     if no_resourcepack:
         raise NotImplementedError("Datapack-only generation is not yet supported.")
 
-    target_size, target_fps, ffmpeg_exec = ask_metadata(video_file)
+    if workers < 1:
+        workers = 1
 
-    mode = PackMode.ZIP if is_zip else PackMode.FOLDER
+    prefer_ffmpeg = True
+    if ffmpeg_exec and not verify_ffmpeg(ffmpeg_exec):
+        print("[Error] Provided FFmpeg executable is not valid, will fallback to pure-python methods.")
+        ffmpeg_exec = None
+        prefer_ffmpeg = False
+    if ffprobe_exec and not verify_ffmpeg(ffprobe_exec):
+        print("[Error] Provided FFprobe executable is not valid, will fallback to pure-python methods.")
+        ffprobe_exec = None
 
-    datapack_name = "datapack"
-    resourcepack_name = "resourcepack"
+    # target_size, target_fps, ffmpeg_exec = ask_metadata(video_file)
+    target_size, target_fps = ask_metadata(video_file)
+
+    mode = PackMode.ZIP if use_zip else PackMode.FOLDER
+
     if output_base:
         datapack_name = f"{output_base}_datapack"
         resourcepack_name = f"{output_base}_resourcepack"
-    if is_zip:
+    else:
+        datapack_name = "datapack"
+        resourcepack_name = "resourcepack"
+
+    if use_zip:
         datapack_name += ".zip"
         resourcepack_name += ".zip"
 
@@ -80,8 +127,8 @@ if __name__ == "__main__":
             output_size=target_size,
             output_fps=target_fps,
             callback=partial(processing_callback, resourcepack=resourcepack),
-            max_workers=16,
-            prefer_ffmpeg=bool(ffmpeg_exec),
+            max_workers=workers,
+            prefer_ffmpeg=prefer_ffmpeg,
             ffmpeg_exec_path=ffmpeg_exec,
         )
         frame_func = generate_frame_related(meta, resourcepack)
@@ -92,7 +139,13 @@ if __name__ == "__main__":
         # handle audio
         segment_time = 10  # audio segment time (seconds)
         with TemporaryDirectory() as tmpdir:
-            audio_files = segment_audio(meta["path"], tmpdir, segment_time=segment_time)
+            audio_files = segment_audio(
+                meta["path"],
+                tmpdir,
+                segment_time=segment_time,
+                prefer_ffmpeg=prefer_ffmpeg,
+                ffmpeg_exec_path=ffmpeg_exec,
+            )
             for filename in audio_files:
                 source_path = os.path.join(tmpdir, filename)
                 resourcepack.write_file_from_disk(f"assets/video/sounds/{filename}", source_path)
@@ -108,7 +161,9 @@ if __name__ == "__main__":
             subs = load_subtitles_from_file(subtitle_file)
 
         if subs is None and not no_subtitle:
-            subs = extract_and_parse_subtitles_from_video(video_file, prefer_ffmpeg=bool(ffmpeg_exec))
+            subs = extract_and_parse_subtitles_from_video(
+                video_file, prefer_ffmpeg=prefer_ffmpeg, ffmpeg_exec=ffmpeg_exec, ffprobe_exec=ffprobe_exec
+            )
 
         if subs:
             init_cmds.append(generate_subtitle_init_mcfunction(subs, fps))

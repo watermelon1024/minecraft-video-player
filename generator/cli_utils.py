@@ -76,6 +76,7 @@ def ask_metadata(video_path: str):
 
     target_size = _ask_size(meta["width"], meta["height"])
     target_fps = _ask_fps(meta["fps"])
-    ffmpeg_exec = _ask_ffmpeg()
+    # ffmpeg_exec = _ask_ffmpeg()
 
-    return target_size, target_fps, ffmpeg_exec
+    # return target_size, target_fps, ffmpeg_exec
+    return target_size, target_fps
