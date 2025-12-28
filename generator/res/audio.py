@@ -19,4 +19,4 @@ def generate_segmented_sounds_json(files: list[str], resourcepack: PackGenerator
 
     json_path = os.path.join("assets/video", "sounds.json")
     resourcepack.write_json(json_path, sounds_data)
-    print(f"[Done] Generated resourcepack sounds: {json_path} with {len(files)} entries")
+    print(f"[ResourcePack] Generated resourcepack sounds: {json_path} with {len(files)} entries")

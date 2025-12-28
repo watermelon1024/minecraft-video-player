@@ -21,10 +21,10 @@ def _ask_size(default_w: int, default_h: int) -> Optional[Tuple[int, int]]:
             h = int(parts[1].strip())
             return resolve_resolution(target_w=w, target_h=h, src_w=default_w, src_h=default_h)
         except Exception:
-            print("Invalid size format.")
+            print("[CLI] Invalid size format.")
             return _ask_size(default_w, default_h)
     else:
-        print("Invalid input.")
+        print("[CLI] Invalid input.")
         return _ask_size(default_w, default_h)
 
 
@@ -36,11 +36,11 @@ def _ask_fps(default_fps: float) -> Optional[float]:
     try:
         f = float(v)
         if f <= 0:
-            print("FPS must be positive.")
+            print("[CLI] FPS must be positive.")
             return _ask_fps(default_fps)
         return f
     except Exception:
-        print("Invalid fps.")
+        print("[CLI] Invalid fps.")
         return _ask_fps(default_fps)
 
 
@@ -48,7 +48,7 @@ def _ask_ffmpeg() -> Optional[str]:
     ffmpeg_path = find_ffmpeg()
     ffmpeg_exec = None
     if ffmpeg_path:
-        print(f"Found ffmpeg at: {ffmpeg_path}")
+        print(f"[CLI] Found ffmpeg at: {ffmpeg_path}")
         ffmpeg_exec = ffmpeg_path
     else:
         resp = input(
@@ -57,11 +57,11 @@ def _ask_ffmpeg() -> Optional[str]:
         if resp != "":
             if verify_ffmpeg(resp):
                 ffmpeg_exec = resp
-                print(f"Using ffmpeg at: {ffmpeg_exec}")
+                print(f"[CLI] Using ffmpeg at: {ffmpeg_exec}")
             else:
-                print("Provided path is not valid ffmpeg; fallback to cv2.")
+                print("[CLI] Provided path is not valid ffmpeg; fallback to cv2.")
         else:
-            print("No ffmpeg provided; fallback to cv2.")
+            print("[CLI] No ffmpeg provided; fallback to cv2.")
 
     return ffmpeg_exec
 
@@ -72,7 +72,7 @@ def ask_metadata(video_path: str):
     Detects ffmpeg, asks for settings, and runs processing.
     """
     meta = get_metadata_cv2(video_path)
-    print("[INFO] Video original metadata: " + json.dumps(meta, indent=2, ensure_ascii=False))
+    print("[CLI] Video original metadata: " + json.dumps(meta, indent=2, ensure_ascii=False))
 
     target_size = _ask_size(meta["width"], meta["height"])
     target_fps = _ask_fps(meta["fps"])

@@ -61,7 +61,7 @@ def generate_frame_related(meta: VideoMetadata, resourcepack: PackGenerator) -> 
     fonts: dict[str, list] = {}
     start_char = 0xE000
 
-    print(f"[Info] Generating frame related data... (Grid: {rows} rows x {cols} cols)")
+    print(f"[ResourcePack] Generating frame related data... (Grid: {rows} rows x {cols} cols)")
 
     for i in range(total_frames):
         for r in range(rows):
@@ -84,7 +84,9 @@ def generate_frame_related(meta: VideoMetadata, resourcepack: PackGenerator) -> 
         json_path = os.path.join(font_dir, f"{name}.json")
         resourcepack.write_json(json_path, {"providers": providers})
 
-    print(f"[Done] Generated resourcepack custom font: {font_dir} with {total_frames * rows * cols} entries")
+    print(
+        f"[ResourcePack] Generated resourcepack custom font: {font_dir} with {total_frames * rows * cols} entries"
+    )
 
     # --- 2. Output commands (Row-based) ---
 
@@ -131,13 +133,13 @@ def generate_frame_related(meta: VideoMetadata, resourcepack: PackGenerator) -> 
             % ((f"{fps}",) * 3)
         )
 
-    print(f"[Done] Generated frame init commands: {len(init_cmds)} lines")
+    print(f"[DataPack] Generated frame init commands: {len(init_cmds)} lines")
 
     loop_cmds = [
         f"$data modify entity @s text.extra[{c * 2}].text set from storage video_player:frame frames[$(frame)]"
         for c in range(cols)
     ]
-    print(f"[Done] Generated play frame commands: {len(loop_cmds)} lines")
+    print(f"[DataPack] Generated play frame commands: {len(loop_cmds)} lines")
 
     return {
         "init": "\n".join(init_cmds),

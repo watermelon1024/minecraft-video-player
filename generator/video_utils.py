@@ -69,31 +69,31 @@ def resolve_resolution(
     target_w: Optional[int], target_h: Optional[int], src_w: int, src_h: int
 ) -> Tuple[int, int]:
     """
-    解析目標解析度，處理 -1 (自動比例) 的情況。
-    確保回傳的是具體的整數 (w, h)。
+    Resolve target resolution, handling -1 (auto aspect ratio).
+    Ensures specific integers (w, h) are returned.
     """
     # change None to -1 for easier handling
     target_w = target_w or -1
     target_h = target_h or -1
 
-    # 如果兩個都是 -1，保持原樣
+    # If both are -1, keep original
     if target_w <= 0 and target_h <= 0:
         return src_w, src_h
 
     final_w = target_w
     final_h = target_h
 
-    # 情況 A: 指定寬度，高度自動 (-1)
+    # Case A: Width specified, height auto (-1)
     if target_w > 0 and target_h <= 0:
         ratio = src_h / src_w
         final_h = int(target_w * ratio)
 
-    # 情況 B: 指定高度，寬度自動 (-1)
+    # Case B: Height specified, width auto (-1)
     elif target_h > 0 and target_w <= 0:
         ratio = src_w / src_h
         final_w = int(target_h * ratio)
 
-    # 情況 C: 兩者都指定，直接使用 (可能變形)
+    # Case C: Both specified, use directly (may distort)
     else:
         final_w = target_w
         final_h = target_h
@@ -190,7 +190,7 @@ def extract_with_cv2_time_based(
         target_fps = src_fps
 
     if duration is None:
-        print("Warning: source duration unknown; falling back to full scan sampling.")
+        print("[Video] Warning: source duration unknown; falling back to full scan sampling.")
         # Fallback: iterate all frames and sample by index accumulation
         frame_interval = src_fps / target_fps if src_fps > 0 and target_fps > 0 else 1.0
         idx = 0
@@ -249,7 +249,7 @@ def process_frames_from_video(
     frame_count = meta["frame_count"]
     duration = meta["duration"]
     print(
-        f"[metadata] source size={src_w}x{src_h}, fps={src_fps}, frames={frame_count or 'unknown'}, duration={f'{duration}s' if duration else 'unknown'}"
+        f"[Video] Source size={src_w}x{src_h}, fps={src_fps}, frames={frame_count or 'unknown'}, duration={f'{duration}s' if duration else 'unknown'}"
     )
 
     target_size = output_size or (src_w, src_h)
@@ -258,7 +258,7 @@ def process_frames_from_video(
     if duration is not None:
         target_frame_count = int(math.floor(duration * target_fps + 1e-6))
     print(
-        f"[processing] target size={target_size[0]}x{target_size[1]}, fps={target_fps}, frames_approx={target_frame_count or 'unknown'}"
+        f"[Video] Target size={target_size[0]}x{target_size[1]}, fps={target_fps}, frames_approx={target_frame_count or 'unknown'}"
     )
     meta["width"] = target_size[0]
     meta["height"] = target_size[1]
@@ -272,14 +272,14 @@ def process_frames_from_video(
             ffmpeg_available = verify_ffmpeg(ffmpeg_exec_path)
 
     if ffmpeg_exec_path and ffmpeg_available:
-        print(f"[ffmpeg] using ffmpeg at: {ffmpeg_exec_path}")
+        print(f"[Video] Using ffmpeg at: {ffmpeg_exec_path}")
         frames = extract_with_ffmpeg_pipe(video_path, output_size, output_fps, ffmpeg_exec_path)
         via = "ffmpeg -> pipe"
     else:
         if not ffmpeg_available:
-            print("[ffmpeg] ffmpeg not found or invalid; fallback to cv2 pipeline.")
+            print("[Video] FFmpeg not found or invalid; fallback to cv2 pipeline.")
         else:
-            print("[ffmpeg] not using ffmpeg; fallback to cv2 pipeline.")
+            print("[Video] Not using ffmpeg; fallback to cv2 pipeline.")
         frames = extract_with_cv2_time_based(video_path, output_size, output_fps)
         via = "cv2 time-based"
 
@@ -294,8 +294,8 @@ def process_frames_from_video(
             try:
                 f.result()
             except Exception as e:
-                print(f"[worker] exception in callback: {e}", file=sys.stderr)
-    print(f"[done] processed {frame_count} frames via {via}.")
+                print(f"[Video] Exception in callback: {e}", file=sys.stderr)
+    print(f"[Video] Processed {frame_count} frames ({target_size[0]}x{target_size[1]}) via {via}.")
 
     meta["frame_count"] = frame_count
     meta["duration"] = frame_count / target_fps

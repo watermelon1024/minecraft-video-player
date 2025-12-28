@@ -99,11 +99,11 @@ def segment_audio_with_pyav(video_path: str, output_dir: str, segment_time: int 
         out_container.close()
         input_container.close()
 
-        print(f"[Audio-Fallback] Segmentation complete, {current_segment_idx + 1} parts.")
+        print(f"[Audio] Segmentation complete, {current_segment_idx + 1} parts.")
         return [os.path.join(output_dir, f"part_{i}.ogg") for i in range(current_segment_idx + 1)]
 
     except Exception as e:
-        print(f"[Audio-Fallback] Segmentation failed: {e}")
+        print(f"[Audio] Segmentation failed: {e}")
         return []
 
 
@@ -129,16 +129,16 @@ def segment_audio(
             ffmpeg_available = True
 
     if ffmpeg_exec_path and ffmpeg_available:
-        print(f"[Audio] using ffmpeg at: {ffmpeg_exec_path}")
+        print(f"[Audio] Using ffmpeg at: {ffmpeg_exec_path}")
         _segment_audio = partial(
             segment_audio_with_ffmpeg, input_video, output_dir, segment_time, ffmpeg_exec=ffmpeg_exec_path
         )
         via = "ffmpeg"
     else:
-        print("[Audio] ffmpeg not available, using fallback method.")
+        print("[Audio] FFmpeg not available, using fallback method.")
         _segment_audio = partial(segment_audio_with_pyav, input_video, output_dir, segment_time)
         via = "fallback"
 
     files = _segment_audio()
-    print(f"[Audio] Splitted audio into {len(files)} segments ({segment_time} seconds each) via {via}...")
+    print(f"[Audio] Split audio into {len(files)} segments ({segment_time} seconds each) via {via}...")
     return files

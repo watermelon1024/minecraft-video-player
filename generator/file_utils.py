@@ -33,7 +33,7 @@ class PackGenerator:
             self.zf = zipfile.ZipFile(self.output_path, "w", zipfile.ZIP_DEFLATED)
 
             if self.template_path and os.path.exists(self.template_path):
-                print(f"[PackGen] Writing template (Zip): {self.template_path}")
+                print(f"[File] Writing template into zip: {self.template_path}")
                 for root, dirs, files in os.walk(self.template_path):
                     for file in files:
                         abs_path = os.path.join(root, file)
@@ -44,7 +44,7 @@ class PackGenerator:
         else:
             # Folder mode: Copy template if exists, else create empty dir.
             if self.template_path and os.path.exists(self.template_path):
-                print(f"[PackGen] Copying template (Folder): {self.template_path}")
+                print(f"[File] Copying template into Folder: {self.template_path}")
                 if os.path.exists(self.output_path):
                     shutil.rmtree(self.output_path)
                 shutil.copytree(self.template_path, self.output_path)
@@ -57,7 +57,7 @@ class PackGenerator:
         if self.zf:
             with self._lock:
                 self.zf.close()
-            print(f"[PackGen] Closed Zip stream: {self.output_path}")
+            print(f"[File] Closed Zip stream: {self.output_path}")
 
     def write_image(self, rel_path: str, image_data: cv2.typing.MatLike):
         """
@@ -70,7 +70,7 @@ class PackGenerator:
         # 1. Encode (CPU intensive, parallelizable)
         success, encoded_img = cv2.imencode(".png", image_data)
         if not success:
-            print(f"[Error] Encoding failed: {rel_path}")
+            print(f"[File] Encoding failed: {rel_path}")
             return
         bytes_data = encoded_img.tobytes()
 

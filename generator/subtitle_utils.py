@@ -112,7 +112,7 @@ def extract_subtitle_with_ffmpeg(video_path: str, track_index: int, ffmpeg_exec:
         srt_content = res.stdout.decode("utf-8", errors="ignore")
 
         if not srt_content.strip():
-            print("[Warn] FFmpeg extracted empty content.")
+            print("[Subtitle] FFmpeg extracted empty content.")
         else:
             return pysubs2.SSAFile.from_string(srt_content)
     except Exception as e:
@@ -199,7 +199,7 @@ def extract_and_parse_subtitles_from_video(
     elif pyav_available:
         tracks_info = get_subtitle_tracks_with_pyav(video_path)
     else:
-        print("[Warn] No subtitle detection tool found (FFprobe / PyAV).")
+        print("[Subtitle] No subtitle detection tool found (FFprobe / PyAV).")
         tracks_info = [
             {"index": 0, "language": "und", "title": "Unknown", "source": "Assumed"}
         ]  # Assume first track
@@ -218,10 +218,10 @@ def extract_and_parse_subtitles_from_video(
         try:
             target_index = int(target_track) - 1
             if target_index < 0 or target_index >= len(tracks_info):
-                print("Invalid selection, defaulting to 1.")
+                print("[Subtitle] Invalid selection, defaulting to 1.")
                 target_index = 0
         except Exception:
-            print("Invalid input, defaulting to 1.")
+            print("[Subtitle] Invalid input, defaulting to 1.")
             target_index = 0
     else:
         target_index = 0
@@ -235,7 +235,7 @@ def extract_and_parse_subtitles_from_video(
     elif pyav_available:
         subs = extract_subtitle_with_pyav(video_path, target_index)
     else:
-        print("[Error] No subtitle extraction tool available (FFmpeg / PyAV).")
+        print("[Subtitle] No subtitle extraction tool available (FFmpeg / PyAV).")
         return None
 
     if subs is None:

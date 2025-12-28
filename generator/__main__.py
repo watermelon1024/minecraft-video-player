@@ -101,11 +101,11 @@ if __name__ == "__main__":
 
     prefer_ffmpeg = True
     if ffmpeg_exec and not verify_ffmpeg(ffmpeg_exec):
-        print("[Error] Provided FFmpeg executable is not valid, will fallback to pure-python methods.")
+        print("[Main] Provided FFmpeg executable is not valid, will fallback to pure-python methods.")
         ffmpeg_exec = None
         prefer_ffmpeg = False
     if ffprobe_exec and not verify_ffmpeg(ffprobe_exec):
-        print("[Error] Provided FFprobe executable is not valid, will fallback to pure-python methods.")
+        print("[Main] Provided FFprobe executable is not valid, will fallback to pure-python methods.")
         ffprobe_exec = None
 
     # target_size, target_fps, ffmpeg_exec = ask_metadata(video_file)
@@ -175,19 +175,19 @@ if __name__ == "__main__":
 
         if subs:
             init_cmds.append(generate_subtitle_init_mcfunction(subs, fps, scale=subtitle_scale))
-            print(f"[Done] Generated subtitles with {len(subs)} entries.")
+            print(f"[Main] Generated subtitles with {len(subs)} entries.")
         else:
             # empty subtitles
             init_cmds.append("data modify storage video_player:subtitle subtitle set value {}")
-            print("[Info] No subtitles found, skipping subtitle generation.")
+            print("[Main] No subtitles found, skipping subtitle generation.")
 
         # save mcfunctions
         mcfunction_dir = "data/video_player/function"
 
         init_path = os.path.join(mcfunction_dir, "init.mcfunction")
         datapack.write_text(init_path, "\n".join(init_cmds))
-        print(f"[Done] Generated datapack init: {init_path}")
+        print(f"[Main] Writing datapack init function: {init_path}")
 
         play_loop_path = os.path.join(mcfunction_dir, "play_frame.mcfunction")
         datapack.write_text(play_loop_path, frame_func["loop"])
-        print(f"[Done] Generated datapack play loop: {play_loop_path}")
+        print(f"[Main] Writing datapack play loop function: {play_loop_path}")

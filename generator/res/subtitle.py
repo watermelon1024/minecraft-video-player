@@ -3,19 +3,19 @@ import pysubs2
 
 def generate_subtitle_init_mcfunction(subtitle: pysubs2.SSAFile, fps: float, scale: float = 2.0):
     """
-    根據影片路徑產生對應的字幕檔路徑
-    例如: video/subtitles/{video_filename}_subtitles.srt
+    Generate the corresponding subtitle file path based on the video path.
+    Example: video/subtitles/{video_filename}_subtitles.srt
     """
     subtitles_dict: dict[int, str] = {}
 
     for line in subtitle:
-        # 將時間轉換為 frame index
+        # Convert time to frame index
         start_sec = int(line.start / 1000 * fps)
         end_sec = int(line.end / 1000 * fps)
-        text = line.text.replace(r"\N", "\n")  # 處理換行
+        text = line.text.replace(r"\N", "\n")  # Handle newlines
 
         subtitles_dict[start_sec] = text
-        subtitles_dict[end_sec] = ""  # 清除字幕
+        subtitles_dict[end_sec] = ""  # Clear subtitle
 
     storage = ",".join(f'{k}:"{v}"' for k, v in subtitles_dict.items())
     summon = (
