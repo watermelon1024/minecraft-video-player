@@ -9,7 +9,7 @@ from .cli_utils import ask_metadata
 from .ffmpeg_utils import verify_ffmpeg
 from .file_utils import PackGenerator, PackMode
 from .res.audio import generate_segmented_sounds_json
-from .res.callback import generate_frame_related, processing_callback
+from .res.frame import generate_frame_related, processing_callback
 from .res.subtitle import generate_subtitle_init_mcfunction
 from .subtitle_utils import extract_and_parse_subtitles_from_video, load_subtitles_from_file
 from .video_utils import process_frames_from_video
