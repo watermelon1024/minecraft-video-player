@@ -157,11 +157,11 @@ if __name__ == "__main__":
             for filename in audio_files:
                 source_path = os.path.join(tmpdir, filename)
                 resourcepack.write_file_from_disk(f"assets/video/sounds/{filename}", source_path)
-            generate_segmented_sounds_json(audio_files, resourcepack, namespace="video")
-
-        init_cmds.append(
-            f"scoreboard players set audio_segment video_player {int(math.floor(segment_time * fps + 1e-6))}"
-        )
+            if audio_files:
+                generate_segmented_sounds_json(audio_files, resourcepack, namespace="video")
+                init_cmds.append(
+                    f"scoreboard players set audio_segment video_player {int(math.floor(segment_time * fps + 1e-6))}"
+                )
 
         # handle subtitle
         subs = None

@@ -3,8 +3,6 @@ import subprocess
 from functools import partial
 from typing import Optional, cast
 
-import av
-
 from generator.ffmpeg_utils import find_ffmpeg, verify_ffmpeg
 
 
@@ -41,6 +39,11 @@ def segment_audio_with_pyav(video_path: str, output_dir: str, segment_time: int 
     """
     Split audio into Ogg segments using PyAV.
     """
+    try:
+        import av
+    except ImportError:
+        raise ImportError("PyAV is not installed. Please install it to use this feature.")
+
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -136,7 +139,11 @@ def segment_audio(
         via = "ffmpeg"
     else:
         print("[Audio] FFmpeg not available, using fallback method.")
-        _segment_audio = partial(segment_audio_with_pyav, input_video, output_dir, segment_time)
+        try:
+            _segment_audio = partial(segment_audio_with_pyav, input_video, output_dir, segment_time)
+        except ImportError:
+            print("[Audio] PyAV is not installed. Cannot segment audio.")
+            return []
         via = "fallback"
 
     files = _segment_audio()
