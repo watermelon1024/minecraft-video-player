@@ -27,7 +27,7 @@ A powerful tool that converts video files into Minecraft Datapacks and Resourcep
 1. **Clone the repository**
 
     ```bash
-    git clone https://github.com/yourusername/minecraft_video_player.git
+    git clone https://github.com/watermelon1024/minecraft-video-player.git
     cd minecraft_video_player
     ```
 
