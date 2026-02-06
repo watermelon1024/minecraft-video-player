@@ -71,6 +71,12 @@ python -m generator "path/to/video.mp4" [options]
 python -m generator "bad_apple.mp4" -o bad_apple -s "bad_apple.srt"
 ```
 
+> [!WARNING]
+> - If the generated resourcepack is larger than 4 GB, you may need more than 24 GB of RAM to load it.
+> - If the generated resourcepack is larger than 8 GB, you may need more than 52 GB of RAM to load it.
+>
+> I haven't tried loading larger resourcepacks, but given that 8GB is enough to use so much RAM, I strongly advise against loading them larger than 10GB.
+
 ### In-Game Instructions
 
 1. **Install the Packs**:
