@@ -17,6 +17,46 @@ PIXEL_SCALE = 0.025  # 1 px = 0.025 blocks
 ROW_HEIGHT_BLOCKS = MAX_H * PIXEL_SCALE  # 6.4
 
 
+def _get_safe_unicode_hex(index: int) -> int:
+    """
+    Maps an integer index to a "safe" (LTR) Unicode character.
+    Avoids:
+    1. C0 control characters (0000-001F)
+    2. Hebrew/Arabic RTL blocks (0590-08FF, FB1D-FB4F, etc.)
+    3. Surrogates (D800-DFFF)
+    4. Special symbol areas
+    """
+
+    # Strategy: Define multiple "safe ranges" and fill them sequentially.
+    # Prioritize PUA (E000-F8FF)
+    # Then use CJK Unified Ideographs (4E00-9FFF) -> Over 20k chars, very safe and LTR.
+
+    ranges = [
+        (0xE000, 0xF8FF),  # Private Use Area (Primary choice, cleanest)
+        (0x4E00, 0x9FFF),  # CJK Unified Ideographs (Large capacity, strictly LTR)
+        (0x3400, 0x4DBF),  # CJK Extension A
+        (0xAC00, 0xD7AF),  # Hangul Syllables (Korean)
+    ]
+
+    current_offset = 0
+
+    for start, end in ranges:
+        capacity = end - start + 1
+
+        if index < current_offset + capacity:
+            # Found the location
+            local_index = index - current_offset
+            return start + local_index
+
+        current_offset += capacity
+
+    raise ValueError("Index too large, safe Unicode ranges exhausted")
+
+
+def _get_safe_unicode(index: int) -> str:
+    return chr(_get_safe_unicode_hex(index))
+
+
 def processing_callback(
     frame: FrameData, index: FrameIndex, timestamp: TimestampSec, resourcepack: PackGenerator
 ):
@@ -59,7 +99,6 @@ def generate_frame_related(meta: VideoMetadata, resourcepack: PackGenerator) -> 
 
     # --- 1. Generate custom font json ---
     fonts: dict[str, list] = {}
-    start_char = 0xE000
 
     print(f"[ResourcePack] Generating frame related data... (Grid: {rows} rows x {cols} cols)")
 
@@ -75,7 +114,7 @@ def generate_frame_related(meta: VideoMetadata, resourcepack: PackGenerator) -> 
                         "file": f"video:frame/{i}_{r}_{c}.png",
                         "ascent": 0,
                         "height": current_h,
-                        "chars": [chr(start_char + i)],
+                        "chars": [_get_safe_unicode(i)],
                     }
                 )
 
@@ -121,7 +160,7 @@ def generate_frame_related(meta: VideoMetadata, resourcepack: PackGenerator) -> 
         init_cmds.append(cmd)
 
     # --- 3. Generate frame Unicode mapping table ---
-    frames_unicode = ",".join(f'"\\u{start_char + i:04x}"' for i in range(total_frames))
+    frames_unicode = ",".join(f'"\\u{_get_safe_unicode_hex(i):04x}"' for i in range(total_frames))
     init_cmds.append("data merge storage video_player:frame {frames:[%s]}" % frames_unicode)
 
     init_cmds.append("scoreboard players set frame video_player 0")
