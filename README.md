@@ -72,10 +72,15 @@ python -m generator "bad_apple.mp4" -o bad_apple -s "bad_apple.srt"
 ```
 
 > [!WARNING]
+>
+> ### Be careful with memory usage
+>
 > - If the generated resourcepack is larger than 4 GB, you may need more than 24 GB of RAM to load it.
 > - If the generated resourcepack is larger than 8 GB, you may need more than 52 GB of RAM to load it.
 >
 > I haven't tried loading larger resourcepacks, but given that 8GB is enough to use so much RAM, I strongly advise against loading them larger than 10GB.
+>
+> The fonts in the resourcepack are loaded into the native heap, not the JVM heap. This means **JVM memory parameters (like `-Xmx`) cannot limit this behavior**. Monitor your system's total RAM usage, as large resourcepacks can consume significant memory beyond Java's configured limits.
 
 ### In-Game Instructions
 
